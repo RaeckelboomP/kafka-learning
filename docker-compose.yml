@@ -1,7 +1,8 @@
 services:
   broker:
-    image: apache/kafka:latest
-    container_name: broker
+    image: apache/kafka:4.1.2
+    networks:
+      - backend-kafka
     environment:
       KAFKA_NODE_ID: 1
       KAFKA_PROCESS_ROLES: broker,controller
@@ -17,21 +18,44 @@ services:
       KAFKA_NUM_PARTITIONS: 3
     ports:
       - "9092:9092"
+    volumes:
+      - kafka-data:/tmp/kafka-logs/
+    healthcheck:
+      test: ["CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
   
   backend:
     build: ./backend-java
-    container_name: backend
+    networks:
+      - backend-kafka
+      - frontend-backend
     depends_on:
       - broker
     environment:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: broker:9092
     ports:
       - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   frontend:
     build: ./frontend
-    container_name: frontend
+    networks:
+      - frontend-backend
     depends_on:
       - backend
     ports:
       - "4200:80"
+
+networks:
+  frontend-backend:
+  backend-kafka:
+    internal: true
+
+volumes:
+  kafka-data:

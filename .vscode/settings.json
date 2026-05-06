@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
         "devcontainers",
+        "healthcheck",
         "raeckelboomp"
     ],
     "java.compile.nullAnalysis.mode": "automatic",
